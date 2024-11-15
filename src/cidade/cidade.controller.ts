@@ -49,7 +49,7 @@ export class CidadeController {
       if (err instanceof PrismaClientKnownRequestError) {
         if (err.code == PrismaErrors.RECORD_NOT_FOUND) {
           throw new HttpException(
-            "Não foi possível alterar o registro. Cidade não encontrada",
+            "Não foi possível alterar. Cidade não encontrada",
             HttpStatus.NOT_FOUND,
           );
         }
@@ -69,8 +69,14 @@ export class CidadeController {
       if (err instanceof PrismaClientKnownRequestError) {
         if (err.code == PrismaErrors.RECORD_NOT_FOUND) {
           throw new HttpException(
-            "Não foi possível excluir o registro. Cidade não encontrada",
+            "Não foi possível excluir. Cidade não encontrada",
             HttpStatus.NOT_FOUND,
+          );
+        }
+        if (err.code == PrismaErrors.FK_VIOLATION) {
+          throw new HttpException(
+            "Não foi possível excluir. Registro filho encontrado",
+            HttpStatus.BAD_REQUEST,
           );
         }
       }
