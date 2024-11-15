@@ -7,9 +7,13 @@ import {
   Delete,
   HttpException,
   HttpStatus,
+  Patch,
 } from "@nestjs/common";
 import { FreteService } from "./frete.service";
 import { CreateFreteDto } from "./dto/create-frete.dto";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { PrismaErrors } from "../prisma/enum/prisma-error.enum";
+import { UpdateFreteDto } from "./dto/update-frete.dto";
 
 @Controller("frete")
 export class FreteController {
@@ -34,13 +38,46 @@ export class FreteController {
     return frete;
   }
 
-  // @Patch(":id")
-  // update(@Param("id") id: string, @Body() updateFreteDto: UpdateFreteDto) {
-  //   return this.freteService.update(+id, updateFreteDto);
-  // }
+  @Patch(":num_conhecimento")
+  async update(
+    @Param("num_conhecimento") num_conhecimento: string,
+    @Body() updateFreteDto: UpdateFreteDto,
+  ) {
+    try {
+      return await this.freteService.update(+num_conhecimento, updateFreteDto);
+    } catch (err) {
+      if (err instanceof PrismaClientKnownRequestError) {
+        if (err.code == PrismaErrors.RECORD_NOT_FOUND) {
+          throw new HttpException(
+            "Não foi possível excluir o registro. Frete não encontrado",
+            HttpStatus.NOT_FOUND,
+          );
+        }
+      }
+      throw new HttpException(
+        "Erro desconhecido",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 
   @Delete(":num_conhecimento")
-  remove(@Param("num_conhecimento") num_conhecimento: number) {
-    return this.freteService.remove(num_conhecimento);
+  async remove(@Param("num_conhecimento") num_conhecimento: string) {
+    try {
+      return await this.freteService.remove(+num_conhecimento);
+    } catch (err) {
+      if (err instanceof PrismaClientKnownRequestError) {
+        if (err.code == PrismaErrors.RECORD_NOT_FOUND) {
+          throw new HttpException(
+            "Não foi possível excluir o registro. Frete não encontrado",
+            HttpStatus.NOT_FOUND,
+          );
+        }
+      }
+      throw new HttpException(
+        "Erro desconhecido",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

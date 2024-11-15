@@ -2,7 +2,7 @@ import { IFrete } from "../interface/frete.interface";
 import { IsDateString, IsEnum, IsNotEmpty } from "class-validator";
 import { Pagador, TipoCobranca } from "@prisma/client";
 
-export class CreateFreteDto implements IFrete {
+export class UpdateFreteDto implements IFrete {
   @IsNotEmpty()
   valor_frete: number;
 
