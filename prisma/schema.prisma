@@ -1,0 +1,108 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TipoCobranca {
+  peso
+  valor
+}
+
+enum Pagador {
+  remetente
+  destinatario
+}
+
+model Estado {
+  uf String @id
+  nome String
+  icms_local Float
+  icms_outro_uf Float
+  cidades Cidade[]
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Cidade {
+  codigo Int @id @default(autoincrement())
+  nome String
+  uf_cidade String
+  uf Estado @relation(fields: [uf_cidade], references: [uf])
+  fretes_origem Frete[] @relation("cidade_origem")
+  fretes_destino Frete[] @relation("cidade_destino")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Cliente {
+  codigo Int @id @default(autoincrement())
+  data_insc DateTime
+  endereco String
+  telefone String
+  pessoa PessoaFisica?
+  empresa PessoaJuridica?
+  fretes_remetente Frete[] @relation("frete_remetente")
+  fretes_destinatario Frete[] @relation("frete_destinatario")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model PessoaFisica {
+  codigo Int @id @default(autoincrement())
+  nome String
+  cpf String @unique
+  cod_cliente Int @unique
+  cliente Cliente @relation(fields: [cod_cliente], references: [codigo])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model PessoaJuridica {
+  codigo Int @id @default(autoincrement())
+  razao_social String
+  cnpj String @unique
+  inscricao_estadual String
+  cod_cliente Int @unique
+  cliente Cliente @relation(fields: [cod_cliente], references: [codigo])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Funcionario {
+  num_registro Int @id @default(autoincrement())
+  nome String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Frete {
+  num_conhecimento Int @id @default(autoincrement())
+  valor_frete Float
+  icms Float
+  pedagio Float
+  peso Float
+  tipo_cobranca TipoCobranca
+  data_frete DateTime
+  pagador Pagador
+  cod_cli_remetente Int
+  remetente Cliente @relation("frete_remetente", fields: [cod_cli_remetente], references: [codigo])
+  cod_cli_destinatario Int
+  destinatario Cliente @relation("frete_destinatario", fields: [cod_cli_destinatario], references: [codigo])
+  cod_cidade_origem Int @unique
+  origem Cidade @relation("cidade_origem", fields: [cod_cidade_origem], references: [codigo])
+  cod_cidade_destino Int @unique
+  destino Cidade @relation("cidade_destino", fields: [cod_cidade_destino], references: [codigo])
+  num_reg_funcionario Int @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
