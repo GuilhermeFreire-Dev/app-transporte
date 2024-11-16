@@ -66,19 +66,11 @@ export default function Estado() {
         setShowModal(false);
       } else {
         const json = await res.json();
-        if (typeof json.message === "string") {
-          setAlert({
-            message: json.message,
-            alert_type: AlertType.ERROR,
-            emitted_at: new Date()
-          });
-        } else {
-          setAlert({
-            message: json.message.toString(),
-            alert_type: AlertType.ERROR,
-            emitted_at: new Date()
-          });
-        }
+        setAlert({
+          message: typeof json.message === "string" ? json.message : json.message.toString(),
+          alert_type: AlertType.ERROR,
+          emitted_at: new Date()
+        });
       }
     }).catch(e => {
       console.error(e);
@@ -108,19 +100,11 @@ export default function Estado() {
         setShowModal(false);
       } else {
         const json = await res.json();
-        if (typeof json.message === "string") {
-          setAlert({
-            message: json.message,
-            alert_type: AlertType.ERROR,
-            emitted_at: new Date()
-          });
-        } else {
-          setAlert({
-            message: json.message.toString(),
-            alert_type: AlertType.ERROR,
-            emitted_at: new Date()
-          });
-        }
+        setAlert({
+          message: typeof json.message === "string" ? json.message : json.message.toString(),
+          alert_type: AlertType.ERROR,
+          emitted_at: new Date()
+        });
       }
     }).catch(e => {
       console.error(e);
@@ -141,19 +125,11 @@ export default function Estado() {
         setEstados(estados.filter(estado => (estado.uf !== est.uf)));
       } else {
         const json = await res.json();
-        if (typeof json.message === "string") {
-          setAlert({
-            message: json.message,
-            alert_type: AlertType.ERROR,
-            emitted_at: new Date()
-          });
-        } else {
-          setAlert({
-            message: json.message.toString(),
-            alert_type: AlertType.ERROR,
-            emitted_at: new Date()
-          });
-        }
+        setAlert({
+          message: typeof json.message === "string" ? json.message : json.message.toString(),
+          alert_type: AlertType.ERROR,
+          emitted_at: new Date()
+        });
       }
     }).catch(e => {
       console.error(e);
@@ -169,24 +145,19 @@ export default function Estado() {
     }));
   }
 
-  function showModalForEdit(estado: Estado) {
+  function openModal(estado: Estado) {
     setEstado(estado);
-    setShowModal(true);
-  }
-
-  function showModalForCreate() {
-    setEstado({});
     setShowModal(true);
   }
 
   return (
     <>
-      <Container header={"Estado"} onNew={showModalForCreate}>
+      <Container header={"Estado"} onNew={()=>{openModal({})}}>
         {
           estados.map((estado) => (
             <Card key={estado.uf}>
               <div className={"flex flex-row justify-between"}>
-                <div className={"w-full"} onClick={()=>{showModalForEdit(estado)}}>
+                <div className={"w-full"} onClick={()=>{openModal(estado)}}>
                   <p>{estado.uf}</p>
                   <p>{estado.nome}</p>
                 </div>
