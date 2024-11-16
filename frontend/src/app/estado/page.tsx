@@ -7,7 +7,7 @@ import Container from "@/app/components/container";
 import Card from "@/app/components/card";
 import AlertBox, { Alert, AlertType } from "@/app/components/alert-box";
 
-type Estado = {
+export type Estado = {
   uf?: string;
   nome?: string;
   icms_local?: number;
@@ -19,7 +19,7 @@ type Estado = {
 export default function Estado() {
 
   const [showModal, setShowModal] = useState<boolean>(false);
-  const [estados, setEstados] = useState<Array<Estado>>(Array<Estado>);
+  const [estados, setEstados] = useState<Estado[]>(Array<Estado>);
   const [estado, setEstado] = useState<Estado>();
   const [alert, setAlert] = useState<Alert>({
     message: "",

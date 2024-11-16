@@ -17,7 +17,7 @@ type Funcionario = {
 export default function Funcionario() {
 
   const [showModal, setShowModal] = useState<boolean>(false);
-  const [funcionarios, setFuncionarios] = useState<Array<Funcionario>>(Array<Funcionario>);
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>(Array<Funcionario>);
   const [funcionario, setFuncionario] = useState<Funcionario>();
   const [alert, setAlert] = useState<Alert>({
     message: "",
