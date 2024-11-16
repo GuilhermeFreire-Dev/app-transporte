@@ -20,8 +20,24 @@ export class EstadoController {
   constructor(private readonly estadoService: EstadoService) {}
 
   @Post()
-  create(@Body() createEstadoDto: CreateEstadoDto) {
-    return this.estadoService.create(createEstadoDto);
+  async create(@Body() createEstadoDto: CreateEstadoDto) {
+    try {
+      return await this.estadoService.create(createEstadoDto);
+    } catch (err) {
+      console.log(err);
+      if (err instanceof PrismaClientKnownRequestError) {
+        if (err.code == PrismaErrors.UK_VIOLATION) {
+          throw new HttpException(
+            "Não foi possível criar. UF já cadastrada",
+            HttpStatus.NOT_FOUND,
+          );
+        }
+      }
+      throw new HttpException(
+        "Erro desconhecido",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Get()
