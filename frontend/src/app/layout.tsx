@@ -30,7 +30,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-row p-5 max-h-screen`}
       >
         <SideBar></SideBar>
-        <main className={"px-10"}>
+        <main className={"px-10 w-full"}>
           {children}
         </main>
       </body>
