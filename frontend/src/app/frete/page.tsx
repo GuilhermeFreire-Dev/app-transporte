@@ -282,9 +282,10 @@ export default function Frete() {
             <div className={"flex flex-row justify-between"}>
               <div className={"w-full"} onClick={() => openModal(frete)}>
                 <p>Número do Conhecimento: {frete.num_conhecimento}</p>
-                <p>Peso: {frete.peso}</p>
-                <p>Tipo de Cobrança: {frete.tipo_cobranca}</p>
-                <p>Pagador: {frete.pagador}</p>
+                <p>{`Valor do frete: ${frete.valor_frete}`}</p>
+                <p>{`Peso: ${frete.peso}`}</p>
+                <p>{`Tipo de Cobrança: ${frete.tipo_cobranca}`}</p>
+                <p>{`Pagador: ${frete.pagador}`}</p>
               </div>
               <button className={"text-red-400"} onClick={() => remove(frete)}>
                 Excluir
