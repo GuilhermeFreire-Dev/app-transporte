@@ -7,30 +7,43 @@ import Modal from "@/app/components/modal";
 import Form from "@/app/components/form";
 import Fieldset from "@/app/components/fieldset";
 import React, { useEffect, useState } from "react";
+import { Cidade } from "@/app/cidade/page";
+import { Funcionario } from "@/app/funcionario/page";
 
-export interface IFrete {
-  num_conhecimento: number;
-  valor_frete: number;
-  icms: number;
-  pedagio: number;
-  peso: number;
-  tipo_cobranca: TipoCobranca;
-  data_frete: Date;
-  pagador: Pagador;
-  cod_cli_remetente: number;
-  cod_cli_destinatario: number;
-  cod_cidade_origem: number;
-  cod_cidade_destino: number;
-  num_reg_funcionario: number;
+type Frete = {
+  num_conhecimento?: number;
+  valor_frete?: number;
+  icms?: number;
+  pedagio?: number;
+  peso?: number;
+  data_frete?: string;
+  cod_cli_remetente?: number;
+  cod_cli_destinatario?: number;
+  cod_cidade_origem?: number;
+  cod_cidade_destino?: number;
+  num_reg_funcionario?: number;
+  tipo_cobranca?: TipoCobranca;
+  pagador?: Pagador;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export type TipoCobranca = "Pré-Pago" | "Posterior";
-export type Pagador = "Remetente" | "Destinatário" | "Terceiros";
+enum Pagador {
+  REMETENTE = "remetente",
+  DESTINATARIO = "destinatario",
+}
+
+enum TipoCobranca {
+  PESO = "peso",
+  VALOR = "valor",
+}
 
 export default function Frete() {
   const [showModal, setShowModal] = useState<boolean>(false);
-  const [fretes, setFretes] = useState<IFrete[]>([]);
-  const [frete, setFrete] = useState<IFrete | null>(null);
+  const [fretes, setFretes] = useState<Frete[]>(Array<Frete>);
+  const [frete, setFrete] = useState<Frete | null>(null);
+  const [cidades, setCidades] = useState<Cidade[]>(Array<Cidade>);
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>(Array<Funcionario>);
   const [alert, setAlert] = useState<Alert>({
     message: "",
     alert_type: AlertType.SUCCESS,
@@ -39,18 +52,19 @@ export default function Frete() {
 
   useEffect(() => {
     getAll();
+    getAllCidades();
+    getAllFuncionarios();
   }, []);
 
   const getAll = (): void => {
     fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/frete`)
       .then(async (res) => {
         if (res.ok) {
-          const data: IFrete[] = await res.json();
-          setFretes(data);
+          setFretes(await res.json());
         } else {
           const json = await res.json();
           setAlert({
-            message: json.message || "Erro ao buscar fretes.",
+            message: json.message,
             alert_type: AlertType.ERROR,
             emitted_at: new Date(),
           });
@@ -65,6 +79,44 @@ export default function Frete() {
         });
       });
   };
+
+  function getAllCidades() {
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cidade`)
+    .then(async (res) => {
+      if (res.ok) {
+        setCidades(await res.json());
+      } else {
+        const json = await res.json();
+        setAlert({
+          message: json.message,
+          alert_type: AlertType.ERROR,
+          emitted_at: new Date(),
+        });
+      }
+    })
+    .catch((e) => {
+      console.error(e);
+    });
+  }
+
+  function getAllFuncionarios() {
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/funcionario`)
+    .then(async (res) => {
+      if (res.ok) {
+        setFuncionarios(await res.json());
+      } else {
+        const json = await res.json();
+        setAlert({
+          message: json.message,
+          alert_type: AlertType.ERROR,
+          emitted_at: new Date(),
+        });
+      }
+    })
+    .catch((e) => {
+      console.error(e);
+    });
+  }
 
   const create = (): void => {
     if (frete?.num_conhecimento) {
@@ -83,7 +135,7 @@ export default function Frete() {
     })
       .then(async (res) => {
         if (res.ok) {
-          const newFrete: IFrete = await res.json();
+          const newFrete: Frete = await res.json();
           setAlert({
             message: "Frete criado com sucesso",
             alert_type: AlertType.SUCCESS,
@@ -94,7 +146,7 @@ export default function Frete() {
         } else {
           const json = await res.json();
           setAlert({
-            message: json.message || "Erro ao criar frete.",
+            message: json.message,
             alert_type: AlertType.ERROR,
             emitted_at: new Date(),
           });
@@ -121,11 +173,11 @@ export default function Frete() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(frete),
-      }
+      },
     )
       .then(async (res) => {
         if (res.ok) {
-          const updatedFrete: IFrete = await res.json();
+          const updatedFrete: Frete = await res.json();
           setAlert({
             message: "Frete atualizado com sucesso",
             alert_type: AlertType.SUCCESS,
@@ -135,8 +187,8 @@ export default function Frete() {
             fretes.map((f) =>
               f.num_conhecimento === updatedFrete.num_conhecimento
                 ? updatedFrete
-                : f
-            )
+                : f,
+            ),
           );
           setShowModal(false);
         } else {
@@ -158,12 +210,12 @@ export default function Frete() {
       });
   };
 
-  const remove = (freteToRemove: IFrete): void => {
+  const remove = (freteToRemove: Frete): void => {
     fetch(
       `${process.env.NEXT_PUBLIC_BACKEND_URL}/frete/${freteToRemove.num_conhecimento}`,
       {
         method: "DELETE",
-      }
+      },
     )
       .then(async (res) => {
         if (res.ok) {
@@ -174,8 +226,8 @@ export default function Frete() {
           });
           setFretes(
             fretes.filter(
-              (f) => f.num_conhecimento !== freteToRemove.num_conhecimento
-            )
+              (f) => f.num_conhecimento !== freteToRemove.num_conhecimento,
+            ),
           );
         } else {
           const json = await res.json();
@@ -197,33 +249,27 @@ export default function Frete() {
   };
 
   const handleInput = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = event.target;
-    setFrete((prev) =>
-      prev
-        ? {
-            ...prev,
-            [name]:
-              name === "valor_frete" ||
-              name === "icms" ||
-              name === "pedagio" ||
-              name === "peso" ||
-              name === "cod_cli_remetente" ||
-              name === "cod_cli_destinatario" ||
-              name === "cod_cidade_origem" ||
-              name === "cod_cidade_destino" ||
-              name === "num_reg_funcionario"
-                ? Number(value)
-                : name === "data_frete"
-                ? new Date(value)
-                : value,
-          }
-        : null
-    );
+    const v = [
+      "valor_frete",
+      "icms",
+      "pedagio",
+      "peso",
+      "cod_cli_remetente",
+      "cod_cli_destinatario",
+      "cod_cidade_origem",
+      "cod_cidade_destino",
+      "num_reg_funcionario"
+    ].includes(name) ? Number(value) : value;
+    setFrete((prev) => ({
+      ...prev,
+      [name]: v,
+    }));
   };
 
-  const openModal = (freteToEdit: IFrete | null) => {
+  const openModal = (freteToEdit: Frete | null) => {
     setFrete(freteToEdit);
     setShowModal(true);
   };
@@ -236,23 +282,9 @@ export default function Frete() {
             <div className={"flex flex-row justify-between"}>
               <div className={"w-full"} onClick={() => openModal(frete)}>
                 <p>Número do Conhecimento: {frete.num_conhecimento}</p>
-                <p>Valor do Frete: {frete.valor_frete}</p>
-                <p>ICMS: {frete.icms}</p>
-                <p>Pedágio: {frete.pedagio}</p>
                 <p>Peso: {frete.peso}</p>
                 <p>Tipo de Cobrança: {frete.tipo_cobranca}</p>
-                <p>
-                  Data do Frete:{" "}
-                  {new Date(frete.data_frete).toLocaleDateString()}
-                </p>
                 <p>Pagador: {frete.pagador}</p>
-                <p>Cod Cliente Remetente: {frete.cod_cli_remetente}</p>
-                <p>Cod Cliente Destinatário: {frete.cod_cli_destinatario}</p>
-                <p>Cod Cidade Origem: {frete.cod_cidade_origem}</p>
-                <p>Cod Cidade Destino: {frete.cod_cidade_destino}</p>
-                <p>
-                  Número de Registro do Funcionário: {frete.num_reg_funcionario}
-                </p>
               </div>
               <button className={"text-red-400"} onClick={() => remove(frete)}>
                 Excluir
@@ -263,129 +295,138 @@ export default function Frete() {
       </Container>
       {showModal && (
         <Modal
-          header={frete ? "Editar Frete" : "Criar Frete"}
+          header={"Criar/Editar Frete"}
           onCancel={() => setShowModal(false)}
           onOk={() => create()}
         >
           <Form>
-            <Fieldset>
-              {!frete && <label>Número do Conhecimento</label>}
-              {!frete && (
-                <input
-                  name="num_conhecimento"
-                  type="number"
-                  onChange={handleInput}
-                  required
-                />
-              )}
-              <label>Valor do Frete</label>
-              <input
-                name="valor_frete"
-                type="number"
-                value={frete?.valor_frete || ""}
-                onChange={handleInput}
-                required
-              />
-              <label>ICMS</label>
-              <input
-                name="icms"
-                type="number"
-                value={frete?.icms || ""}
-                onChange={handleInput}
-                required
-              />
-              <label>Pedágio</label>
-              <input
-                name="pedagio"
-                type="number"
-                value={frete?.pedagio || ""}
-                onChange={handleInput}
-                required
-              />
-              <label>Peso</label>
-              <input
-                name="peso"
-                type="number"
-                value={frete?.peso || ""}
-                onChange={handleInput}
-                required
-              />
-              <label>Tipo de Cobrança</label>
-              <select
-                name="tipo_cobranca"
-                value={frete?.tipo_cobranca || ""}
-                onChange={handleInput}
-                required
-              >
-                <option value="">Selecione</option>
-                <option value="Pré-Pago">Pré-Pago</option>
-                <option value="Posterior">Posterior</option>
-              </select>
-              <label>Data do Frete</label>
-              <input
-                name="data_frete"
-                type="date"
-                value={
-                  frete
-                    ? new Date(frete.data_frete).toISOString().substr(0, 10)
-                    : ""
-                }
-                onChange={handleInput}
-                required
-              />
-              <label>Pagador</label>
-              <select
-                name="pagador"
-                value={frete?.pagador || ""}
-                onChange={handleInput}
-                required
-              >
-                <option value="">Selecione</option>
-                <option value="Remetente">Remetente</option>
-                <option value="Destinatário">Destinatário</option>
-                <option value="Terceiros">Terceiros</option>
-              </select>
-              <label>Código do Cliente Remetente</label>
-              <input
-                name="cod_cli_remetente"
-                type="number"
-                value={frete?.cod_cli_remetente || ""}
-                onChange={handleInput}
-                required
-              />
-              <label>Código do Cliente Destinatário</label>
-              <input
-                name="cod_cli_destinatario"
-                type="number"
-                value={frete?.cod_cli_destinatario || ""}
-                onChange={handleInput}
-                required
-              />
-              <label>Código da Cidade de Origem</label>
-              <input
-                name="cod_cidade_origem"
-                type="number"
-                value={frete?.cod_cidade_origem || ""}
-                onChange={handleInput}
-                required
-              />
-              <label>Código da Cidade de Destino</label>
-              <input
-                name="cod_cidade_destino"
-                type="number"
-                value={frete?.cod_cidade_destino || ""}
-                onChange={handleInput}
-                required
-              />
-              <label>Número de Registro do Funcionário</label>
-              <input
-                name="num_reg_funcionario"
-                type="number"
-                value={frete?.num_reg_funcionario || ""}
-                onChange={handleInput}
-                required
-              />
-            </Fieldset>
+            <div className={"grid grid-cols-3"}>
+              <Fieldset>
+                <label>Valor do Frete</label>
+                <input name={"valor_frete"} type={"number"}
+                       defaultValue={frete?.valor_frete}
+                       onChange={handleInput}
+                       required/>
+              </Fieldset>
+              <Fieldset>
+                <label>ICMS</label>
+                <input name={"icms"} type={"number"}
+                       defaultValue={frete?.icms}
+                       onChange={handleInput}
+                       required/>
+              </Fieldset>
+              <Fieldset>
+                <label>Pedágio</label>
+                <input name={"pedagio"} type={"number"}
+                       defaultValue={frete?.pedagio}
+                       onChange={handleInput}
+                       required/>
+              </Fieldset>
+            </div>
+            <div className={"grid grid-cols-3"}>
+              <Fieldset>
+                <label>Peso</label>
+                <input name={"peso"} type={"number"}
+                       defaultValue={frete?.peso}
+                       onChange={handleInput}
+                       required/>
+              </Fieldset>
+              <Fieldset>
+                <label>Tipo de Cobrança</label>
+                <select name={"tipo_cobranca"}
+                        defaultValue={frete?.tipo_cobranca}
+                        onChange={handleInput}
+                        required>
+                  <option value="">Selecione</option>
+                  <option value={TipoCobranca.PESO}>peso</option>
+                  <option value={TipoCobranca.VALOR}>valor</option>
+                </select>
+              </Fieldset>
+              <Fieldset>
+                <label>Data do Frete</label>
+                <input name={"data_frete"} type={"date"}
+                       defaultValue={frete?.data_frete?.replace(/T.*$/, '')}
+                       onChange={handleInput}
+                       required/>
+              </Fieldset>
+            </div>
+            <div className={"grid grid-cols-3"}>
+              <Fieldset>
+                <label>Pagador</label>
+                <select name={"pagador"}
+                        defaultValue={frete?.pagador}
+                        onChange={handleInput}
+                        required>
+                  <option value={""}>Selecione</option>
+                  <option value={Pagador.REMETENTE}>remetente</option>
+                  <option value={Pagador.DESTINATARIO}>destinatário</option>
+                </select>
+              </Fieldset>
+              <Fieldset>
+                <label>Código do Cliente Remetente</label>
+                <input name={"cod_cli_remetente"} type={"number"}
+                       defaultValue={frete?.cod_cli_remetente}
+                       onChange={handleInput}
+                       required/>
+              </Fieldset>
+              <Fieldset>
+                <label>Código do Cliente Destinatário</label>
+                <input name={"cod_cli_destinatario"} type={"number"}
+                       defaultValue={frete?.cod_cli_destinatario}
+                       onChange={handleInput}
+                       required/>
+              </Fieldset>
+            </div>
+            <div className={"grid grid-cols-3"}>
+              <Fieldset>
+                <label>Cidade de origem</label>
+                <select name={"cod_cidade_origem"}
+                        defaultValue={frete?.cod_cidade_origem}
+                        onChange={handleInput}>
+                  <option>Selecione</option>
+                  {
+                    cidades.map(cidade => (
+                      <option key={cidade.codigo}
+                              value={cidade.codigo}>
+                        {`${cidade.nome} - ${cidade.uf_cidade}`}
+                      </option>
+                    ))
+                  }
+                </select>
+              </Fieldset>
+              <Fieldset>
+                <label>Cidade de destino</label>
+                <select name={"cod_cidade_destino"}
+                        defaultValue={frete?.cod_cidade_destino}
+                        onChange={handleInput}>
+                  <option>Selecione</option>
+                  {
+                    cidades.map(cidade => (
+                      <option key={cidade.codigo}
+                              value={cidade.codigo}>
+                        {`${cidade.nome} - ${cidade.uf_cidade}`}
+                      </option>
+                    ))
+                  }
+                </select>
+              </Fieldset>
+              <Fieldset>
+                <label>Funcionário</label>
+                <select name={"num_reg_funcionario"}
+                        defaultValue={frete?.num_reg_funcionario}
+                        onChange={handleInput}>
+                  <option>Selecione</option>
+                  {
+                    funcionarios.map(funcionario => (
+                      <option key={funcionario.num_registro}
+                              value={funcionario.num_registro}>
+                        {`${funcionario.nome}`}
+                      </option>
+                    ))
+                  }
+                </select>
+              </Fieldset>
+            </div>
           </Form>
         </Modal>
       )}

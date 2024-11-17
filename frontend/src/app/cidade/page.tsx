@@ -8,7 +8,7 @@ import Form from "@/app/components/form";
 import Fieldset from "@/app/components/fieldset";
 import { Estado } from "@/app/estado/page";
 
-type Cidade = {
+export type Cidade = {
   codigo?: number;
   nome?: string;
   uf_cidade?: string;

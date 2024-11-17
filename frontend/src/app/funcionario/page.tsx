@@ -7,7 +7,7 @@ import Form from "@/app/components/form";
 import Fieldset from "@/app/components/fieldset";
 import React, { useEffect, useState } from "react";
 
-type Funcionario = {
+export type Funcionario = {
   num_registro?: number;
   nome?: string;
   created_at?: string;

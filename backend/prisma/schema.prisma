@@ -98,11 +98,11 @@ model Frete {
   remetente Cliente @relation("frete_remetente", fields: [cod_cli_remetente], references: [codigo])
   cod_cli_destinatario Int
   destinatario Cliente @relation("frete_destinatario", fields: [cod_cli_destinatario], references: [codigo])
-  cod_cidade_origem Int @unique
+  cod_cidade_origem Int
   origem Cidade @relation("cidade_origem", fields: [cod_cidade_origem], references: [codigo])
-  cod_cidade_destino Int @unique
+  cod_cidade_destino Int
   destino Cidade @relation("cidade_destino", fields: [cod_cidade_destino], references: [codigo])
-  num_reg_funcionario Int @unique
+  num_reg_funcionario Int
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
