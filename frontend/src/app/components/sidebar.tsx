@@ -7,7 +7,7 @@ export default function SideBar() {
       path: "/"
     },
     {
-      name: "Esdado",
+      name: "Estado",
       path: "/estado",
     },
     {
