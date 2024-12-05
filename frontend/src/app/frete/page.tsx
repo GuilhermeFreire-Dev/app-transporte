@@ -11,6 +11,7 @@ import { Funcionario } from "@/app/funcionario/page";
 import Lista from "@/app/frete/components/lista";
 import ListaTotais from "@/app/frete/components/lista-totais";
 import { Estado } from "@/app/estado/page";
+import ListaMedias from "./components/lista-media";
 
 export type Frete = {
   num_conhecimento?: number;
@@ -42,10 +43,25 @@ export type Totais = {
   }
 }
 
+
+export type Medias = {
+  cidade: Cidade;
+  calculo: {
+    valor_frete: number; 
+  };
+};
+
+
 export type Somatorio = {
   quantidade: number;
   valor: number;
 }
+
+export type Media = {
+  origem: number;
+  destino: number;
+}
+
 
 enum Pagador {
   REMETENTE = "remetente",
@@ -59,7 +75,8 @@ enum TipoCobranca {
 
 enum View {
   LISTA = "lista",
-  TOTAIS = "totais"
+  TOTAIS = "totais",
+  MEDIA = "media"
 }
 
 export default function Frete() {
@@ -72,6 +89,7 @@ export default function Frete() {
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>(Array<Funcionario>);
   const [view, setView] = useState<View>(View.LISTA);
   const [totais, setTotais] = useState<Totais[]>(Array<Totais>);
+  const [medias, setMedias] = useState<Medias[]>(Array<Medias>);
   const [somatorio, setSomatorio] = useState<Somatorio | null>(null);
   const [alert, setAlert] = useState<Alert>({
     message: "",
@@ -93,8 +111,19 @@ export default function Frete() {
   }, [estado]);
 
   useEffect(() => {
+    if (estado) {
+      getTotais();  
+      getMedias();  
+    }
+  }, [estado]);
+
+  useEffect(() => {
     calcularSomatorio();
   }, [totais]);
+
+  useEffect(() => {
+    calcularMedia();
+  }, [medias]);
 
   const getAll = (): void => {
     fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/frete`)
@@ -143,6 +172,31 @@ export default function Frete() {
         });
       });
   };
+
+  const getMedias = (): void => {
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/frete?media=true&uf=${estado?.uf}`)
+      .then(async (res) => {
+        if (res.ok) {
+          setMedias(await res.json()); 
+        } else {
+          const json = await res.json();
+          setAlert({
+            message: json.message,
+            alert_type: AlertType.ERROR,
+            emitted_at: new Date(),
+          });
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+        setAlert({
+          message: "Erro de conexão com o servidor.",
+          alert_type: AlertType.ERROR,
+          emitted_at: new Date(),
+        });
+      });
+  };
+  
 
   function getAllCidades() {
     fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cidade`)
@@ -377,10 +431,26 @@ export default function Frete() {
     setSomatorio(somatorio);
   }
 
+  function calcularMedia() {
+    const mediasCalculadas: Medias[] = totais.map(total => {
+      const totalFretes = total.totais.count._all;
+      const mediaFrete = totalFretes > 0 ? total.totais.sum.valor_frete / totalFretes : 0;
+  
+      return {
+        cidade: total.cidade,
+        calculo: {
+          valor_frete: mediaFrete, 
+        },
+      };
+    });
+  
+    setMedias(mediasCalculadas);
+  }
+  
   return (
     <>
       <Container header={"Frete"} onNew={() => openModal(null)}>
-        <div className={"grid grid-cols-2 gap-4 w-1/2"}>
+        <div className={"grid grid-cols-3 gap-4 w-1/2"}>
           <button onClick={() => {
             setView(View.LISTA);
           }} className={view === View.LISTA ?
@@ -396,6 +466,14 @@ export default function Frete() {
             :
             "border border-neutral-600 rounded-lg px-3 py-2 hover:bg-neutral-600 hover:bg-opacity-50"}>
             Total por estado
+          </button>
+          <button onClick={() => {
+            setView(View.MEDIA);
+          }} className={view === View.MEDIA ?
+            "bg-blue-600 text-white rounded-lg px-3 py-2"
+            :
+            "border border-neutral-600 rounded-lg px-3 py-2 hover:bg-neutral-600 hover:bg-opacity-50"}>
+            Média
           </button>
         </div>
         {
@@ -435,6 +513,41 @@ export default function Frete() {
                 }
               </div>
               <ListaTotais totais={totais}></ListaTotais>
+            </>
+          )
+        }
+        {
+          view === View.MEDIA && (
+            <>
+              <div className={"w-3/4 my-5 grid grid-cols-3 gap-4 items-center"}>
+                <Fieldset>
+                  <label>Estado</label>
+                  <select name={"uf"}
+                          defaultValue={estado?.uf}
+                          onChange={handleSelect}
+                          className={"bg-transparent border border-neutral-600"}>
+                    <option className={"bg-neutral-900"}>Selecione</option>
+                    {
+                      estados.map(estado => (
+                        <option key={estado.uf}
+                                value={estado.uf}
+                                className={"bg-neutral-900"}>
+                          {`${estado.nome}`}
+                        </option>
+                      ))
+                    }
+                  </select>
+                </Fieldset>
+                {
+                  somatorio && (
+                    <div className={"col-span-2 grid grid-cols-2 gap-2"}>
+                      <p>{`Média frete de origem: R$ ${somatorio?.quantidade}`}</p>
+                      <p>{`Média frete de destino: R$ ${somatorio?.valor}`}</p>
+                    </div>
+                  )
+                }
+              </div>
+              <ListaMedias medias={medias}></ListaMedias>
             </>
           )
         }
