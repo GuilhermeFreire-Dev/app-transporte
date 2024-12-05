@@ -8,6 +8,7 @@ import {
   HttpException,
   HttpStatus,
   Patch,
+  Query,
 } from "@nestjs/common";
 import { FreteService } from "./frete.service";
 import { CreateFreteDto } from "./dto/create-frete.dto";
@@ -25,7 +26,10 @@ export class FreteController {
   }
 
   @Get()
-  findAll() {
+  findAll(@Query("uf") uf: string, @Query("total") total: boolean) {
+    if (total) {
+      return this.freteService.totalByCidade(uf);
+    }
     return this.freteService.findAll();
   }
 

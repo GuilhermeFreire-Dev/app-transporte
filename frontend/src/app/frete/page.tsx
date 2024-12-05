@@ -2,15 +2,17 @@
 
 import AlertBox, { Alert, AlertType } from "@/app/components/alert-box";
 import Container from "@/app/components/container";
-import Card from "@/app/components/card";
 import Modal from "@/app/components/modal";
 import Form from "@/app/components/form";
 import Fieldset from "@/app/components/fieldset";
 import React, { useEffect, useState } from "react";
 import { Cidade } from "@/app/cidade/page";
 import { Funcionario } from "@/app/funcionario/page";
+import Lista from "@/app/frete/components/lista";
+import ListaTotais from "@/app/frete/components/lista-totais";
+import { Estado } from "@/app/estado/page";
 
-type Frete = {
+export type Frete = {
   num_conhecimento?: number;
   valor_frete?: number;
   icms?: number;
@@ -28,6 +30,23 @@ type Frete = {
   updated_at?: string;
 }
 
+export type Totais = {
+  cidade: Cidade,
+  totais: {
+    sum: {
+      valor_frete: number
+    },
+    count: {
+      _all: number
+    }
+  }
+}
+
+export type Somatorio = {
+  quantidade: number;
+  valor: number;
+}
+
 enum Pagador {
   REMETENTE = "remetente",
   DESTINATARIO = "destinatario",
@@ -38,12 +57,22 @@ enum TipoCobranca {
   VALOR = "valor",
 }
 
+enum View {
+  LISTA = "lista",
+  TOTAIS = "totais"
+}
+
 export default function Frete() {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [fretes, setFretes] = useState<Frete[]>(Array<Frete>);
   const [frete, setFrete] = useState<Frete | null>(null);
   const [cidades, setCidades] = useState<Cidade[]>(Array<Cidade>);
+  const [estados, setEstados] = useState<Estado[]>(Array<Estado>);
+  const [estado, setEstado] = useState<Estado | null>(null);
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>(Array<Funcionario>);
+  const [view, setView] = useState<View>(View.LISTA);
+  const [totais, setTotais] = useState<Totais[]>(Array<Totais>);
+  const [somatorio, setSomatorio] = useState<Somatorio | null>(null);
   const [alert, setAlert] = useState<Alert>({
     message: "",
     alert_type: AlertType.SUCCESS,
@@ -54,7 +83,18 @@ export default function Frete() {
     getAll();
     getAllCidades();
     getAllFuncionarios();
+    getAllEstados();
   }, []);
+
+  useEffect(() => {
+    if (estado) {
+      getTotais();
+    }
+  }, [estado]);
+
+  useEffect(() => {
+    calcularSomatorio();
+  }, [totais]);
 
   const getAll = (): void => {
     fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/frete`)
@@ -80,42 +120,85 @@ export default function Frete() {
       });
   };
 
-  function getAllCidades() {
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cidade`)
-    .then(async (res) => {
-      if (res.ok) {
-        setCidades(await res.json());
-      } else {
-        const json = await res.json();
+  const getTotais = (): void => {
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/frete?total=true&uf=${estado?.uf}`)
+      .then(async (res) => {
+        if (res.ok) {
+          setTotais(await res.json());
+        } else {
+          const json = await res.json();
+          setAlert({
+            message: json.message,
+            alert_type: AlertType.ERROR,
+            emitted_at: new Date(),
+          });
+        }
+      })
+      .catch((e) => {
+        console.error(e);
         setAlert({
-          message: json.message,
+          message: "Erro de conexão com o servidor.",
           alert_type: AlertType.ERROR,
           emitted_at: new Date(),
         });
-      }
-    })
-    .catch((e) => {
-      console.error(e);
-    });
+      });
+  };
+
+  function getAllCidades() {
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cidade`)
+      .then(async (res) => {
+        if (res.ok) {
+          setCidades(await res.json());
+        } else {
+          const json = await res.json();
+          setAlert({
+            message: json.message,
+            alert_type: AlertType.ERROR,
+            emitted_at: new Date(),
+          });
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+  }
+
+  function getAllEstados() {
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/estado`)
+      .then(async (res) => {
+        if (res.ok) {
+          setEstados(await res.json());
+        } else {
+          const json = await res.json();
+          setAlert({
+            message: json.message,
+            alert_type: AlertType.ERROR,
+            emitted_at: new Date(),
+          });
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+      });
   }
 
   function getAllFuncionarios() {
     fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/funcionario`)
-    .then(async (res) => {
-      if (res.ok) {
-        setFuncionarios(await res.json());
-      } else {
-        const json = await res.json();
-        setAlert({
-          message: json.message,
-          alert_type: AlertType.ERROR,
-          emitted_at: new Date(),
-        });
-      }
-    })
-    .catch((e) => {
-      console.error(e);
-    });
+      .then(async (res) => {
+        if (res.ok) {
+          setFuncionarios(await res.json());
+        } else {
+          const json = await res.json();
+          setAlert({
+            message: json.message,
+            alert_type: AlertType.ERROR,
+            emitted_at: new Date(),
+          });
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+      });
   }
 
   const create = (): void => {
@@ -261,7 +344,7 @@ export default function Frete() {
       "cod_cli_destinatario",
       "cod_cidade_origem",
       "cod_cidade_destino",
-      "num_reg_funcionario"
+      "num_reg_funcionario",
     ].includes(name) ? Number(value) : value;
     setFrete((prev) => ({
       ...prev,
@@ -269,30 +352,92 @@ export default function Frete() {
     }));
   };
 
+  function handleSelect(event: React.ChangeEvent<HTMLSelectElement>) {
+    const { value } = event.target;
+    const est = estados.find(estado => estado.uf === value);
+    if (est) {
+      setEstado(est);
+    }
+  }
+
   const openModal = (freteToEdit: Frete | null) => {
     setFrete(freteToEdit);
     setShowModal(true);
   };
 
+  function calcularSomatorio() {
+    const somatorio: Somatorio = {
+      quantidade: 0,
+      valor: 0
+    };
+    totais.forEach(total => {
+      somatorio.quantidade += total.totais.count._all;
+      somatorio.valor += total.totais.sum.valor_frete;
+    });
+    setSomatorio(somatorio);
+  }
+
   return (
     <>
       <Container header={"Frete"} onNew={() => openModal(null)}>
-        {fretes.map((frete) => (
-          <Card key={frete.num_conhecimento}>
-            <div className={"flex flex-row justify-between"}>
-              <div className={"w-full"} onClick={() => openModal(frete)}>
-                <p>Número do Conhecimento: {frete.num_conhecimento}</p>
-                <p>{`Valor do frete: ${frete.valor_frete}`}</p>
-                <p>{`Peso: ${frete.peso}`}</p>
-                <p>{`Tipo de Cobrança: ${frete.tipo_cobranca}`}</p>
-                <p>{`Pagador: ${frete.pagador}`}</p>
+        <div className={"grid grid-cols-2 gap-4 w-1/2"}>
+          <button onClick={() => {
+            setView(View.LISTA);
+          }} className={view === View.LISTA ?
+            "bg-blue-600 text-white rounded-lg px-3 py-2"
+            :
+            "border border-neutral-600 rounded-lg px-3 py-2 hover:bg-neutral-600 hover:bg-opacity-50"}>
+            Todos os fretes
+          </button>
+          <button onClick={() => {
+            setView(View.TOTAIS);
+          }} className={view === View.TOTAIS ?
+            "bg-blue-600 text-white rounded-lg px-3 py-2"
+            :
+            "border border-neutral-600 rounded-lg px-3 py-2 hover:bg-neutral-600 hover:bg-opacity-50"}>
+            Total por estado
+          </button>
+        </div>
+        {
+          view === View.LISTA && (
+            <Lista edit={openModal} remove={remove} fretes={fretes}></Lista>
+          )
+        }
+        {
+          view === View.TOTAIS && (
+            <>
+              <div className={"w-3/4 my-5 grid grid-cols-3 gap-4 items-center"}>
+                <Fieldset>
+                  <label>Estado</label>
+                  <select name={"uf"}
+                          defaultValue={estado?.uf}
+                          onChange={handleSelect}
+                          className={"bg-transparent border border-neutral-600"}>
+                    <option className={"bg-neutral-900"}>Selecione</option>
+                    {
+                      estados.map(estado => (
+                        <option key={estado.uf}
+                                value={estado.uf}
+                                className={"bg-neutral-900"}>
+                          {`${estado.nome}`}
+                        </option>
+                      ))
+                    }
+                  </select>
+                </Fieldset>
+                {
+                  somatorio && (
+                    <div className={"col-span-2 grid grid-cols-2 gap-2"}>
+                      <p>{`Quantidade TOTAL de fretes: ${somatorio?.quantidade}`}</p>
+                      <p>{`Valor TOTAL dos fretes: R$${somatorio?.valor}`}</p>
+                    </div>
+                  )
+                }
               </div>
-              <button className={"text-red-400"} onClick={() => remove(frete)}>
-                Excluir
-              </button>
-            </div>
-          </Card>
-        ))}
+              <ListaTotais totais={totais}></ListaTotais>
+            </>
+          )
+        }
       </Container>
       {showModal && (
         <Modal
@@ -307,21 +452,21 @@ export default function Frete() {
                 <input name={"valor_frete"} type={"number"}
                        defaultValue={frete?.valor_frete}
                        onChange={handleInput}
-                       required/>
+                       required />
               </Fieldset>
               <Fieldset>
                 <label>ICMS</label>
                 <input name={"icms"} type={"number"}
                        defaultValue={frete?.icms}
                        onChange={handleInput}
-                       required/>
+                       required />
               </Fieldset>
               <Fieldset>
                 <label>Pedágio</label>
                 <input name={"pedagio"} type={"number"}
                        defaultValue={frete?.pedagio}
                        onChange={handleInput}
-                       required/>
+                       required />
               </Fieldset>
             </div>
             <div className={"grid grid-cols-3"}>
@@ -330,7 +475,7 @@ export default function Frete() {
                 <input name={"peso"} type={"number"}
                        defaultValue={frete?.peso}
                        onChange={handleInput}
-                       required/>
+                       required />
               </Fieldset>
               <Fieldset>
                 <label>Tipo de Cobrança</label>
@@ -346,9 +491,9 @@ export default function Frete() {
               <Fieldset>
                 <label>Data do Frete</label>
                 <input name={"data_frete"} type={"date"}
-                       defaultValue={frete?.data_frete?.replace(/T.*$/, '')}
+                       defaultValue={frete?.data_frete?.replace(/T.*$/, "")}
                        onChange={handleInput}
-                       required/>
+                       required />
               </Fieldset>
             </div>
             <div className={"grid grid-cols-3"}>
@@ -368,14 +513,14 @@ export default function Frete() {
                 <input name={"cod_cli_remetente"} type={"number"}
                        defaultValue={frete?.cod_cli_remetente}
                        onChange={handleInput}
-                       required/>
+                       required />
               </Fieldset>
               <Fieldset>
                 <label>Código do Cliente Destinatário</label>
                 <input name={"cod_cli_destinatario"} type={"number"}
                        defaultValue={frete?.cod_cli_destinatario}
                        onChange={handleInput}
-                       required/>
+                       required />
               </Fieldset>
             </div>
             <div className={"grid grid-cols-3"}>

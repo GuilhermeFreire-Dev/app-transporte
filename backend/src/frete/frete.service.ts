@@ -45,4 +45,38 @@ export class FreteService {
       where: { num_conhecimento: num_conhecimento },
     });
   }
+
+  async totalByCidade(uf: string) {
+    const cidades = await this.prisma.cidade.findMany({
+      where: {
+        uf_cidade: uf,
+      },
+    });
+
+    const fretes = await this.prisma.frete.groupBy({
+      by: ["cod_cidade_destino"],
+      _sum: {
+        valor_frete: true,
+      },
+      _count: {
+        _all: true,
+      },
+      where: {
+        cod_cidade_destino: {
+          in: cidades.map((cidade) => cidade.codigo),
+        },
+      },
+    });
+
+    return fretes.map((frete) => {
+      const cidade = cidades.find((c) => c.codigo === frete.cod_cidade_destino);
+      return {
+        cidade: cidade,
+        totais: {
+          sum: frete._sum,
+          count: frete._count,
+        },
+      };
+    });
+  }
 }
