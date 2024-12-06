@@ -7,7 +7,7 @@ import Modal from "@/app/components/modal";
 import Form from "@/app/components/form";
 import Fieldset from "@/app/components/fieldset";
 
-type Cliente = {
+export type Cliente = {
   codigo?: number;
   data_insc?: string;
   endereco?: string;

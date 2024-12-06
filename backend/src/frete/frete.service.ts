@@ -3,6 +3,7 @@ import { CreateFreteDto } from "./dto/create-frete.dto";
 import { PrismaService } from "../prisma/prisma.service";
 import { Frete } from "@prisma/client";
 import { UpdateFreteDto } from "./dto/update-frete.dto";
+import * as moment from "moment";
 
 @Injectable()
 export class FreteService {
@@ -77,6 +78,44 @@ export class FreteService {
           count: frete._count,
         },
       };
+    });
+  }
+
+  async findAllFromPessoaJuridica(data: string) {
+    const dataInicio = moment(data).startOf("month");
+    const dataFim = moment(data).endOf("month");
+
+    const empresas = await this.prisma.pessoaJuridica.findMany({
+      select: {
+        cod_cliente: true,
+      },
+    });
+
+    return this.prisma.frete.findMany({
+      where: {
+        cod_cli_remetente: {
+          in: empresas.map((empresa) => empresa.cod_cliente),
+        },
+        cod_cli_destinatario: {
+          in: empresas.map((empresa) => empresa.cod_cliente),
+        },
+        data_frete: {
+          gte: dataInicio.toDate(),
+          lt: dataFim.toDate(),
+        },
+      },
+      include: {
+        remetente: {
+          include: {
+            empresa: true,
+          },
+        },
+        destinatario: {
+          include: {
+            empresa: true,
+          },
+        },
+      },
     });
   }
 }

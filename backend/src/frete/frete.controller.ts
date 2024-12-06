@@ -26,9 +26,17 @@ export class FreteController {
   }
 
   @Get()
-  findAll(@Query("uf") uf: string, @Query("total") total: boolean) {
+  findAll(
+    @Query("uf") uf: string,
+    @Query("total") total: boolean,
+    @Query("pj") pj: boolean,
+    @Query("data") data: string,
+  ) {
     if (total) {
       return this.freteService.totalByCidade(uf);
+    }
+    if (pj) {
+      return this.freteService.findAllFromPessoaJuridica(data);
     }
     return this.freteService.findAll();
   }

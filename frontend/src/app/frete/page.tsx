@@ -11,6 +11,8 @@ import { Funcionario } from "@/app/funcionario/page";
 import Lista from "@/app/frete/components/lista";
 import ListaTotais from "@/app/frete/components/lista-totais";
 import { Estado } from "@/app/estado/page";
+import ListaFretes from "@/app/frete/components/lista-fretes";
+import { Cliente } from "@/app/cliente/page";
 
 export type Frete = {
   num_conhecimento?: number;
@@ -26,6 +28,8 @@ export type Frete = {
   num_reg_funcionario?: number;
   tipo_cobranca?: TipoCobranca;
   pagador?: Pagador;
+  remetente?: Cliente;
+  destinatario?: Cliente;
   created_at?: string;
   updated_at?: string;
 }
@@ -59,7 +63,8 @@ enum TipoCobranca {
 
 enum View {
   LISTA = "lista",
-  TOTAIS = "totais"
+  TOTAIS = "totais",
+  EMPRESAS = "empresas"
 }
 
 export default function Frete() {
@@ -73,6 +78,7 @@ export default function Frete() {
   const [view, setView] = useState<View>(View.LISTA);
   const [totais, setTotais] = useState<Totais[]>(Array<Totais>);
   const [somatorio, setSomatorio] = useState<Somatorio | null>(null);
+  const [filterDate, setFilterDate] = useState<string>("2024-01");
   const [alert, setAlert] = useState<Alert>({
     message: "",
     alert_type: AlertType.SUCCESS,
@@ -87,6 +93,12 @@ export default function Frete() {
   }, []);
 
   useEffect(() => {
+    if (view === View.EMPRESAS || view === View.LISTA) {
+      getAll();
+    }
+  }, [view, filterDate]);
+
+  useEffect(() => {
     if (estado) {
       getTotais();
     }
@@ -97,7 +109,9 @@ export default function Frete() {
   }, [totais]);
 
   const getAll = (): void => {
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/frete`)
+    let url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/frete`;
+    if (view === View.EMPRESAS) url += `?pj=true&data=${filterDate}`;
+    fetch(url)
       .then(async (res) => {
         if (res.ok) {
           setFretes(await res.json());
@@ -368,7 +382,7 @@ export default function Frete() {
   function calcularSomatorio() {
     const somatorio: Somatorio = {
       quantidade: 0,
-      valor: 0
+      valor: 0,
     };
     totais.forEach(total => {
       somatorio.quantidade += total.totais.count._all;
@@ -377,10 +391,15 @@ export default function Frete() {
     setSomatorio(somatorio);
   }
 
+  function handleDate(event: React.ChangeEvent<HTMLInputElement>) {
+    const { value } = event.target;
+    setFilterDate(value);
+  }
+
   return (
     <>
       <Container header={"Frete"} onNew={() => openModal(null)}>
-        <div className={"grid grid-cols-2 gap-4 w-1/2"}>
+        <div className={"grid grid-cols-3 gap-4 w-1/2"}>
           <button onClick={() => {
             setView(View.LISTA);
           }} className={view === View.LISTA ?
@@ -397,6 +416,14 @@ export default function Frete() {
             "border border-neutral-600 rounded-lg px-3 py-2 hover:bg-neutral-600 hover:bg-opacity-50"}>
             Total por estado
           </button>
+          <button onClick={() => {
+            setView(View.EMPRESAS);
+          }} className={view === View.EMPRESAS ?
+            "bg-blue-600 text-white rounded-lg px-3 py-2"
+            :
+            "border border-neutral-600 rounded-lg px-3 py-2 hover:bg-neutral-600 hover:bg-opacity-50"}>
+            Somente Pessoa Juridica
+          </button>
         </div>
         {
           view === View.LISTA && (
@@ -412,7 +439,7 @@ export default function Frete() {
                   <select name={"uf"}
                           defaultValue={estado?.uf}
                           onChange={handleSelect}
-                          className={"bg-transparent border border-neutral-600"}>
+                          className={"bg-transparent border border-neutral-600 py-2 rounded-lg"}>
                     <option className={"bg-neutral-900"}>Selecione</option>
                     {
                       estados.map(estado => (
@@ -435,6 +462,20 @@ export default function Frete() {
                 }
               </div>
               <ListaTotais totais={totais}></ListaTotais>
+            </>
+          )
+        }
+        {
+          view === View.EMPRESAS && (
+            <>
+              <div className={"w-1/4 my-5"}>
+                <Fieldset>
+                  <label className={"mb-1"}>Data:</label>
+                  <input type="month" className={"bg-transparent border border-neutral-600 rounded-lg py-2 px-2"}
+                         onChange={handleDate} defaultValue={filterDate} />
+                </Fieldset>
+              </div>
+              <ListaFretes fretes={fretes}></ListaFretes>
             </>
           )
         }
