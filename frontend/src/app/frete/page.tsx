@@ -120,12 +120,12 @@ export default function Frete() {
   useEffect(() => {
     if (estado) {
       getTotais();
-      calcularMedia();
     }
   }, [estado]);
 
   useEffect(() => {
     calcularSomatorio();
+    calcularMedia();
   }, [totais]);
 
   const getAll = (): void => {
