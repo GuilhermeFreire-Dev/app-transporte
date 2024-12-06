@@ -12,6 +12,8 @@ export default function ListaMedias({medias}: {medias: Array<Medias>}) {
              <h4>{media.cidade.nome}</h4>
              <p>{`Média de fretes de origem: R$ ${media.calculo.valor_frete}`}</p>
              <p>{`Média de fretes de destino: R$ ${media.calculo.valor_frete}`}</p>
+             <p>{`Média de fretes de destino: R$ ${media.calculo.valor_frete}`}</p>
+
            </Card>
          )
        })

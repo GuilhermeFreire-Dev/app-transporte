@@ -113,17 +113,13 @@ export default function Frete() {
   useEffect(() => {
     if (estado) {
       getTotais();  
-      getMedias();  
+      calcularMedia();
     }
   }, [estado]);
 
   useEffect(() => {
     calcularSomatorio();
   }, [totais]);
-
-  useEffect(() => {
-    calcularMedia();
-  }, [medias]);
 
   const getAll = (): void => {
     fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/frete`)
@@ -172,31 +168,6 @@ export default function Frete() {
         });
       });
   };
-
-  const getMedias = (): void => {
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/frete?media=true&uf=${estado?.uf}`)
-      .then(async (res) => {
-        if (res.ok) {
-          setMedias(await res.json()); 
-        } else {
-          const json = await res.json();
-          setAlert({
-            message: json.message,
-            alert_type: AlertType.ERROR,
-            emitted_at: new Date(),
-          });
-        }
-      })
-      .catch((e) => {
-        console.error(e);
-        setAlert({
-          message: "Erro de conexão com o servidor.",
-          alert_type: AlertType.ERROR,
-          emitted_at: new Date(),
-        });
-      });
-  };
-  
 
   function getAllCidades() {
     fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cidade`)

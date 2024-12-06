@@ -79,4 +79,42 @@ export class FreteService {
       };
     });
   }
+
+  async mediaFretesPorCidade(uf: string) {
+    const cidades = await this.prisma.cidade.findMany({
+      where: { uf_cidade: uf },
+    });
+  
+    if (!cidades.length) {
+      throw new Error("Nenhuma cidade encontrada para o UF fornecido");
+    }
+  
+    const medias = await this.prisma.frete.groupBy({
+      by: ["cod_cidade_origem", "cod_cidade_destino"],
+      _avg: {
+        valor_frete: true,
+      },
+      where: {
+        OR: [
+          { cod_cidade_origem: { in: cidades.map((cidade) => cidade.codigo) } },
+          { cod_cidade_destino: { in: cidades.map((cidade) => cidade.codigo) } },
+        ],
+      },
+    });
+  
+    return cidades.map((cidade) => {
+      const origem = medias.find((m) => m.cod_cidade_origem === cidade.codigo);
+      const destino = medias.find((m) => m.cod_cidade_destino === cidade.codigo);
+  
+      return {
+        estado: uf,
+        cidade: cidade.nome,
+        calculo: {
+          media_frete_origem: origem?._avg?.valor_frete || 0,
+          media_frete_destino: destino?._avg?.valor_frete || 0,
+        },
+      };
+    });
+  }
+  
 }

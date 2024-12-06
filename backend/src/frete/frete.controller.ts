@@ -32,7 +32,16 @@ export class FreteController {
     }
     return this.freteService.findAll();
   }
-
+  @Get("media")
+  async mediaFretesPorCidade(@Query("uf") uf: string) {
+    if (!uf) {
+      throw new HttpException("UF é obrigatório", HttpStatus.BAD_REQUEST);
+    }
+  
+    return await this.freteService.mediaFretesPorCidade(uf);
+  }
+  
+  
   @Get(":num_conhecimento")
   findOne(@Param("num_conhecimento") num_conhecimento: number) {
     const frete = this.freteService.findOne(num_conhecimento);
